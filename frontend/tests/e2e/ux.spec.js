@@ -93,6 +93,13 @@ test.describe('look and feel', () => {
     expect(fonts.loaded).toEqual(expect.arrayContaining(['Bricolage Grotesque', 'DM Sans']));
   });
 
+  test('the workspace fits the window: the page itself never scrolls', async ({ page }) => {
+    await openDesigner(page);
+    await page.evaluate(() => window.__banai.store.select('cmp_left')); // a long properties panel
+    const { scroll, viewport } = await page.evaluate(() => ({ scroll: document.documentElement.scrollHeight, viewport: innerHeight }));
+    expect(scroll).toBeLessThanOrEqual(viewport);
+  });
+
   test('dropdowns keep their text clear of the chevron', async ({ page }) => {
     await openDesigner(page);
     await page.evaluate(() => window.__banai.store.select('shf_l1'));

@@ -21,19 +21,19 @@ test.describe('Phase 3: 3D viewer', () => {
     expect(after).not.toEqual(before);
   });
 
-  test('doors are closed by default; "Show interior" swings them open and back', async ({ page }) => {
+  test('doors are closed by default; the "Open doors" switch swings them open and back', async ({ page }) => {
     const doorAngle = () => page.evaluate(() => window.__banai.viewer.meshOf('dr_left').rotation.y);
     expect(await doorAngle()).toBeCloseTo(0);
-    await page.getByLabel('Show interior').check();
+    await page.getByLabel('Open doors').check();
     await expect.poll(() => page.evaluate(() => window.__banai.viewer.doorsOpenAmount())).toBe(1);
     expect(await doorAngle()).toBeCloseTo(-(100 * Math.PI) / 180); // still there, swung open
-    await page.getByLabel('Show interior').uncheck();
+    await page.getByLabel('Open doors').uncheck();
     await expect.poll(() => page.evaluate(() => window.__banai.viewer.doorsOpenAmount())).toBe(0);
     expect(await doorAngle()).toBeCloseTo(0);
   });
 
   test('clicking a shelf selects it, highlights it and shows its dimensions', async ({ page }) => {
-    await page.getByLabel('Show interior').check();
+    await page.getByLabel('Open doors').check();
     await clickComponent(page, 'shf_l2');
     expect(await selection(page)).toEqual({ id: 'shf_l2', kind: 'shelf' });
     await expect(page.getByTestId('selected-section')).toContainText('Selected · Shelf');

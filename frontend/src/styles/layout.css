@@ -66,6 +66,16 @@ body {
 .viewer { position: relative; min-width: 0; overflow: hidden; background: var(--md-sys-color-viewer); }
 .viewer canvas { display: block; }
 .viewer-labels { position: absolute; inset: 0; pointer-events: none; }
+/* Open/close doors, floating over the bottom of the 3D view. */
+.viewer .viewer__doors { /* beats .btn { position: relative } from components.css */
+  position: absolute;
+  bottom: var(--space-4);
+  left: 50%;
+  translate: -50% 0; /* keeps transform free for the press feedback */
+  display: inline-flex;
+  align-items: center;
+  box-shadow: var(--md-sys-elevation-1);
+}
 
 .dim-label {
   padding: 2px var(--space-2);

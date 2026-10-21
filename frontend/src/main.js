@@ -15,6 +15,7 @@ import { mountChat } from './chat/chatPanel.js';
 import { mountStartScreen } from './entry/startScreen.js';
 import { createSaveDialog } from './share/saveDialog.js';
 import { createRenderDialog } from './render/renderDialog.js';
+import { bindCarpenterPdf } from './carpenter/exportPdf.js';
 import { createHomeDialog } from './ui/homeDialog.js';
 import { createLogo } from './ui/logo.js';
 import { createOpenGuide } from './ui/openGuide.js';
@@ -76,6 +77,7 @@ async function boot() {
   bindOpenToggle(store);
   mountPanel(document.getElementById('properties-content'), store);
   bindDialogs();
+  bindCarpenterPdf({ button: document.getElementById('export-pdf'), store, viewer });
 
   // The agent is optional: without an OpenAI key on the server the panel says so honestly.
   const agent = health?.data.agent === true

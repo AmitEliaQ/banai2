@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { fetchSpeech, transcribe } from '../../../src/api/client.js';
+import { API_BASE_URL } from '../../../src/config.js';
 import { createSpeaker, MAX_SPEECH_CHARS, readAloudPreference, startRecording } from '../../../src/chat/voice.js';
 import { STRINGS } from '../../../src/chat/i18n.js';
 
@@ -66,7 +67,7 @@ describe('voice api', () => {
     const fetchImpl = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ success: true, data: { text: 'hi' } }) });
     await expect(transcribe(new Blob(['x'], { type: 'audio/webm;codecs=opus' }), 'en', fetchImpl)).resolves.toEqual({ text: 'hi' });
     const [url, init] = fetchImpl.mock.calls[0];
-    expect(url).toBe('http://localhost:8001/api/voice/transcribe?language=en');
+    expect(url).toBe(`${API_BASE_URL}/api/voice/transcribe?language=en`);
     expect(init.headers['Content-Type']).toBe('audio/webm');
   });
 

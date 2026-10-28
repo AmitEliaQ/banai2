@@ -23,6 +23,9 @@ export const VISUAL = Object.freeze({
   pullHeight: 12,
   pullDepth: 14,
   doorOpenAngle: 100, // degrees, hinged doors in interior view
+  doorShelfInset: 25, // a door shelf stops short of the door's side edges
+  doorShelfLipHeight: 40, // the guard rail along a door shelf's free edge
+  doorShelfLipThickness: 6,
   slidingOpenOpacity: 0.3,
   woodTileSize: 600, // mm of panel covered by one repeat of the wood-grain texture
 });

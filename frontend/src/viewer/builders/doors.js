@@ -4,12 +4,14 @@
 // - Sliding panels overlap their neighbours and alternate between two tracks (back, front),
 //   between a top and a bottom rail, each with a vertical pull handle.
 // Handles and rails are visual hardware only: they are not selectable, and never part of the design.
+// Door shelves hang on the inside face of a hinged door (z < 0 when closed) and move with it.
 // Interior view opens the doors instead of removing them: every door part records its closed
 // pose and how it moves (userData.motion), and poseDoors() places it for an amount 0..1.
 // - Hinged: the panel, its outline and handle rotate together about the hinge edge.
 // - Sliding: the panels already fill the width, so they cannot move aside; they turn
 //   translucent instead and their handles hide.
 import * as THREE from 'three';
+import { DOOR_SHELF_THICKNESS } from '../../domain/defaults.js';
 import { VISUAL, toM } from '../units.js';
 import { box } from './frame.js';
 
@@ -52,6 +54,26 @@ function withMotion(parts, motion) {
   return parts;
 }
 
+/** A door shelf: a board against the door's inside face, with a guard lip along its free edge. */
+function doorShelfParts(shelf, door, [x0, x1], floor, { gap, materialOf }, materials) {
+  const width = x1 - x0 - 2 * gap - 2 * VISUAL.doorShelfInset;
+  const cx = (x0 + x1) / 2;
+  const material = shelf.appearance ? materials.forAppearance(shelf.appearance) : materialOf(door);
+  const userData = { componentId: shelf.id, kind: 'doorShelf', doorId: door.id };
+  const board = box({
+    size: [width, DOOR_SHELF_THICKNESS, shelf.depth],
+    center: [cx, floor + shelf.y + DOOR_SHELF_THICKNESS / 2, -shelf.depth / 2],
+    material, userData, rounded: true,
+  });
+  const lip = box({
+    size: [width, VISUAL.doorShelfLipHeight, VISUAL.doorShelfLipThickness],
+    center: [cx, floor + shelf.y + DOOR_SHELF_THICKNESS + VISUAL.doorShelfLipHeight / 2,
+      -shelf.depth + VISUAL.doorShelfLipThickness / 2],
+    material, userData, rounded: true,
+  });
+  return [board, lip];
+}
+
 function buildHinged(design, frame, materials, { t, gap, y, height, materialOf }) {
   const rangeOf = new Map(design.compartments.map((c, i) => [c.id, frame.ranges[i]]));
   const spanOf = (door) => [rangeOf.get(door.compartmentIds[0])[0], rangeOf.get(door.compartmentIds.at(-1))[1]];
@@ -79,7 +101,9 @@ function buildHinged(design, frame, materials, { t, gap, y, height, materialOf }
       pivot: new THREE.Vector3(toM(right ? x1 - gap : x0 + gap), 0, toM(t)),
       angle: THREE.MathUtils.degToRad(openAngle) * (right ? 1 : -1),
     };
-    return withMotion([panel, outline(panel, materials), handle(freeEdgeX, t, y, height, materials)], motion);
+    const shelves = door.shelves.flatMap((shelf) =>
+      doorShelfParts(shelf, door, [x0, x1], frame.panel, { gap, materialOf }, materials));
+    return withMotion([panel, outline(panel, materials), handle(freeEdgeX, t, y, height, materials), ...shelves], motion);
   });
 }
 

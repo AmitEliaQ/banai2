@@ -219,3 +219,36 @@ describe('material cache', () => {
     expect(materials.forAppearance(basic.carcass.appearance)).toBe(kept);
   });
 });
+
+describe('door shelves', () => {
+  const withShelves = applyOps(basic, [
+    { op: 'add_door_shelf', doorId: 'dr_left', y: 1000, depth: 120, id: 'dsh_1' },
+  ], catalog);
+
+  it('hang a board and a guard lip on the inside face of the closed door', () => {
+    const parts = byId(build(withShelves), 'dsh_1');
+    expect(parts.map((m) => m.userData.kind)).toEqual(['doorShelf', 'doorShelf']);
+    const [board] = parts;
+    close(board.position.y, (18 + 1000 + 6) / 1000);
+    close(board.position.z, -0.06);
+    close(size(board).z, 0.12);
+  });
+
+  it('swing open with their door', () => {
+    const group = build(withShelves);
+    const [board] = byId(group, 'dsh_1');
+    const closedZ = board.position.z;
+    poseDoors(group, 1);
+    expect(board.rotation.y).toBeCloseTo(byId(group, 'dr_left')[0].rotation.y, 6);
+    expect(board.position.z).toBeGreaterThan(closedZ);
+  });
+
+  it('set the shelves and drawers behind that door back to clear them; other compartments keep full depth', () => {
+    const group = build(withShelves);
+    const [left] = byId(group, 'shf_l1');
+    const [right] = byId(group, 'shf_r1');
+    close(size(left).z, (594 - 122) / 1000);
+    close(left.position.z, -(594 + 122) / 2000);
+    close(size(right).z, 0.594);
+  });
+});

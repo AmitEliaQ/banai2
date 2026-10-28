@@ -15,7 +15,7 @@ test.describe('Phase 4: manual editing', () => {
   test.beforeEach(async ({ page }) => openDesigner(page));
 
   test('selecting a shelf in 3D shows its properties; editing its height moves the mesh', async ({ page }) => {
-    await page.getByLabel('Show interior').check();
+    await page.getByLabel('Open doors').check();
     await clickComponent(page, 'shf_l2');
     const shelfY = page.getByTestId('shelf-y');
     await expect(shelfY).toHaveValue('80.0');
@@ -38,7 +38,7 @@ test.describe('Phase 4: manual editing', () => {
     const { revision } = await state(page);
     await commit(page.getByTestId('dim-height'), 'abc');
     await expect(page.getByText('Enter a number in cm, e.g. 64.5')).toBeVisible();
-    await page.getByLabel('Show interior').check();
+    await page.getByLabel('Open doors').check();
     await clickComponent(page, 'shf_l1');
     await commit(page.getByTestId('shelf-y'), '81');
     await expect(page.getByText('That would overlap another shelf or drawer. Choose a different position.')).toBeVisible();
@@ -73,10 +73,29 @@ test.describe('Phase 4: manual editing', () => {
   });
 
   test('deleting the selected shelf removes it and clears the selection', async ({ page }) => {
-    await page.getByLabel('Show interior').check();
+    await page.getByLabel('Open doors').check();
     await clickComponent(page, 'shf_r1');
     await page.getByTestId('delete-selected').click();
     await expect.poll(async () => (await state(page)).design.compartments[2].shelves.length).toBe(1);
     expect((await state(page)).selection).toBeNull();
   });
+});
+
+test('the added catalog material and colours reach the editor, the 3D view and the PDF request', async ({ page }) => {
+  await openDesigner(page);
+  const material = page.getByLabel('Material').first();
+  await expect(material.locator('option[value="birch_plywood"]')).toHaveText('Birch plywood');
+  await material.selectOption('birch_plywood');
+  for (const [name, hex] of [['Navy blue', '2b3a52'], ['Sand beige', 'd9c8ad'], ['Sage green', '8f9e83']]) {
+    await page.getByRole('button', { name, exact: true }).first().click();
+    await expect.poll(() => page.evaluate(() => window.__banai.viewer.meshOf('carcass').material.color.getHexString())).toBe(hex);
+  }
+
+  await page.getByTestId('open-export').click();
+  const request = page.waitForRequest('**/api/export/pdf');
+  await page.getByTestId('export-download').click();
+  const { design } = (await request).postDataJSON();
+  expect(design.carcass.appearance.material).toEqual({ catalogId: 'birch_plywood' });
+  expect(design.carcass.appearance.color).toEqual({ catalogId: 'sage_green' });
+  await page.waitForEvent('download');
 });

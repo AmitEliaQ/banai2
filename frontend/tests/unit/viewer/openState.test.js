@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
+import { applyOps } from '../../../src/domain/apply.js';
 import { buildWardrobe } from '../../../src/viewer/buildWardrobe.js';
 import { createMaterials } from '../../../src/viewer/materials.js';
-import { createOpener, HINGE_OPEN_RAD } from '../../../src/viewer/openState.js';
+import { createOpener } from '../../../src/viewer/openState.js';
 import { loadCatalog, loadDesign } from '../domain/helpers.js';
 
 const catalog = loadCatalog();
@@ -24,7 +25,7 @@ describe('createOpener', () => {
 
     expect(opener.toggle(door.id)).toBe(true);
     finish(opener);
-    expect(Math.abs(panel.rotation.y)).toBeCloseTo(HINGE_OPEN_RAD, 6);
+    expect(Math.abs(panel.rotation.y)).toBeCloseTo(Math.abs(panel.userData.motion.angle), 6);
     parts.forEach((mesh, i) => expect(mesh.position.distanceTo(before[i])).toBeGreaterThan(0.01));
     // A door opens toward the viewer (+z).
     expect(panel.position.z).toBeGreaterThan(before[0].z);
@@ -59,7 +60,7 @@ describe('createOpener', () => {
 
     const rebuilt = build(basic);
     opener.attach(rebuilt, basic);
-    expect(Math.abs(panelOf(rebuilt, door.id).rotation.y)).toBeCloseTo(HINGE_OPEN_RAD, 6);
+    expect(Math.abs(panelOf(rebuilt, door.id).rotation.y)).toBeCloseTo(Math.abs(panelOf(rebuilt, door.id).userData.motion.angle), 6);
   });
 
   it('closeAll animates every open door shut', () => {
@@ -72,4 +73,24 @@ describe('createOpener', () => {
     finish(opener);
     basic.doors.items.forEach((door) => expect(panelOf(group, door.id).rotation.y).toBeCloseTo(0, 6));
   });
+
+  it('swings the inside shelves of a door with it, and never closes a door the Open-doors switch holds open', () => {
+    const design = applyOps(basic, [{ op: 'add_door_shelf', doorId: 'dr_left', y: 1000, id: 'dsh_1' }], catalog);
+    const group = build(design);
+    let global = 0;
+    const opener = createOpener({ globalAmount: () => global });
+    opener.attach(group, design);
+    const shelf = group.children.find((mesh) => mesh.userData.componentId === 'dsh_1');
+    const closedZ = shelf.position.z;
+    opener.toggle('dr_left');
+    finish(opener);
+    expect(shelf.rotation.y).toBeCloseTo(panelOf(group, 'dr_left').rotation.y, 6);
+    expect(shelf.position.z).toBeGreaterThan(closedZ);
+
+    opener.toggle('dr_left'); // tap closed again while the switch has every door open
+    global = 1;
+    finish(opener);
+    expect(Math.abs(panelOf(group, 'dr_left').rotation.y)).toBeCloseTo(Math.abs(panelOf(group, 'dr_left').userData.motion.angle), 6);
+  });
 });
+

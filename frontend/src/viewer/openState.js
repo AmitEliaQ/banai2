@@ -24,6 +24,8 @@ function sizeOf(mesh) {
 /** How one door/drawer moves, or null when it has nowhere to go (e.g. a single sliding panel). */
 function motionOf(mesh, design) {
   const { kind, hingeSide, componentId } = mesh.userData;
+  // A hinged door already knows its hinge from buildDoors (shared with the Open-doors switch).
+  if (mesh.userData.motion?.type === 'hinge') return { type: 'hinge', shared: true };
   const size = sizeOf(mesh);
   if (kind === 'drawer') return { type: 'slide', axis: new THREE.Vector3(0, 0, 1), distance: size.z * DRAWER_TRAVEL };
   if (hingeSide) {
@@ -41,7 +43,8 @@ function motionOf(mesh, design) {
   return { type: 'slide', axis: new THREE.Vector3(1, 0, 0), distance: direction * step };
 }
 
-export function createOpener() {
+/** `globalAmount()` is the Open-doors switch (0..1); a door is posed at the larger of the two. */
+export function createOpener({ globalAmount = () => 0 } = {}) {
   let parts = []; // { mesh, id, base }
   let motions = new Map(); // component id -> motion
   const progress = new Map(); // component id -> { value, target }, survives scene rebuilds
@@ -49,7 +52,13 @@ export function createOpener() {
   const pose = ({ mesh, id, base }) => {
     const motion = motions.get(id);
     const p = ease(progress.get(id)?.value ?? 0);
-    if (motion.type === 'hinge') {
+    if (motion.shared) {
+      // Every part of the door (panel, outline, handle, door shelves) turns about the same hinge.
+      const { pivot, angle: open } = mesh.userData.motion;
+      const angle = open * Math.max(p, globalAmount());
+      mesh.position.copy(mesh.userData.closedPosition).sub(pivot).applyAxisAngle(UP, angle).add(pivot);
+      mesh.rotation.y = angle;
+    } else if (motion.type === 'hinge') {
       const angle = motion.angle * p;
       mesh.position.copy(base).sub(motion.pivot).applyAxisAngle(UP, angle).add(motion.pivot);
       mesh.rotation.y = angle;
@@ -81,6 +90,11 @@ export function createOpener() {
       entry.target = entry.target === 1 ? 0 : 1;
       progress.set(id, entry);
       return true;
+    },
+
+    /** Re-apply individual open states after the Open-doors switch moved every door. */
+    refresh() {
+      parts.filter(({ id }) => (progress.get(id)?.value ?? 0) > 0).forEach(pose);
     },
 
     closeAll() {

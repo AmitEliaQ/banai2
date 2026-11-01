@@ -7,6 +7,8 @@ An MVP for designing standard straight wardrobes with three synchronized parts:
 
 All three edit **one canonical design state** through the same typed operations.
 
+> This repository is a fork of [JonathanZouari/banai](https://github.com/JonathanZouari/banai). It adds the Home button, Undo, Tap to open and the Carpenter PDF.
+
 ![BanAI workspace](docs/screenshots/02-workspace.png)
 
 ## Table of contents
@@ -28,6 +30,10 @@ All three edit **one canonical design state** through the same typed operations.
   - Orbit and zoom around the wardrobe, and click any component to select it.
   - Live dimension labels in cm.
   - A "Show interior" toggle hides the doors.
+  - **Tap to open:** when switched on, clicking a door or drawer opens it. This is visual only and doesn't change the design.
+- **Home and Undo:**
+  - **Home** asks for confirmation, then returns to the start screen.
+  - **Undo** steps back through earlier versions of the design.
 - **Properties editor:**
   - Overall size, doors (hinged, sliding or none), materials, colours and finishes.
   - Compartments, shelves, drawers and hanging rails.
@@ -39,6 +45,10 @@ All three edit **one canonical design state** through the same typed operations.
 - **Voice:**
   - Press the mic, speak in Hebrew or English, and press it again. Your words are transcribed and sent as a chat message, and the result is still a proposal you confirm.
   - Optionally, have replies **read aloud** in an AI-generated voice.
+- **Saved designs:** Save stores the design and gives you a private link to reopen and keep editing it.
+- **PDF export:**
+  - **Generate Style Profile** creates a design drawing from the server.
+  - **Carpenter PDF** creates a brief in the browser with a cut list, drawings and assembly steps. Its sizes are for a carpenter to verify; it is not a manufacturing specification.
 - **Design-only scope:** the agent declines anything that isn't about wardrobe design.
 
 ## Screenshots
@@ -103,8 +113,9 @@ npm run dev
 | Variable | Purpose |
 |---|---|
 | `OPENAI_API_KEY` | Enables the AI Designer. Without it, the chat says the agent isn't connected. |
-| `OPENAI_CHAT_MODEL` | Model to use, for example `gpt-4.1`. It has a configurable default. |
+| `OPENAI_CHAT_MODEL` | Model to use. Optional; the default is `gpt-5.4-mini`. |
 | `OPENAI_TRANSCRIBE_MODEL` / `OPENAI_TTS_MODEL` / `OPENAI_TTS_VOICE` | Voice models and voice. Optional; the defaults are `gpt-4o-mini-transcribe`, `gpt-4o-mini-tts` and `marin`. |
+| `SUPABASE_URL` / `SUPABASE_SECRET_KEY` | Store for saved designs. Left empty with `APP_ENV=local`, designs stay in memory and are lost on restart. |
 | `PROPOSAL_SIGNING_KEY` | HMAC key for proposals. Required outside `APP_ENV=local`. |
 | `CORS_ORIGINS` | Allowed frontend origins, comma-separated. |
 | `APP_ENV` | Set to `local`, `dev` or `production`. API docs are disabled in production. |
@@ -148,9 +159,11 @@ Playwright E2E tests never call OpenAI; the agent flows mock the `/api` edge.
 | 4 | UI and manual editing | Done |
 | 5 | AI designer agent | Merged |
 | 5+ | Voice (speech in, read-aloud out) | Done |
-| 6+ | Persistence and share links, AI photoreal render, deployment hardening | Planned |
+| 6+ | Saved designs and private share links | Done |
+| 6+ | Style Profile and Carpenter PDF export | Done |
+| 6+ | AI photoreal render, deployment hardening | Planned |
 
-Save and Render in the top bar open dialogs that say those features aren't available yet.
+Render in the top bar opens a dialog that says rendering isn't available yet.
 
 ## Documentation
 

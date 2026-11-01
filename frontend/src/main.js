@@ -20,7 +20,10 @@ import { createSaveDialog } from './share/saveDialog.js';
 import { parseShareHash, shareHash } from './share/link.js';
 import { createExportDialog } from './export/exportDialog.js';
 import { createRenderDialog } from './render/renderDialog.js';
+import { bindCarpenterPdf } from './carpenter/exportPdf.js';
+import { createHomeDialog } from './ui/homeDialog.js';
 import { createLogo } from './ui/logo.js';
+import { createOpenGuide } from './ui/openGuide.js';
 import { installRipple } from './ui/ripple.js';
 
 function showError(message) {
@@ -43,6 +46,23 @@ function bindInteriorToggle(store) {
   toggle.addEventListener('change', () => store.setDoorsVisible(!toggle.checked));
   store.subscribe((state) => { toggle.checked = !state.ui.doorsVisible; });
 }
+
+function bindOpenToggle(store) {
+  const toggle = document.getElementById('toggle-open');
+  const guide = createOpenGuide(toggle.closest('.toggle'));
+  toggle.addEventListener('change', () => {
+    store.setSelectiveOpen(toggle.checked);
+    if (toggle.checked) guide.show();
+    else guide.hide();
+  });
+}
+
+function bindUndo(store) {
+  const button = document.getElementById('undo');
+  button.addEventListener('click', () => store.undo());
+  store.subscribe((state) => { button.disabled = !state.canUndo; });
+}
+
 
 /**
  * The design to open: the saved one when the page was opened from its private link, else the basic
@@ -105,6 +125,8 @@ async function boot() {
   const store = createStore({ design: initial.design, revision: initial.revision, catalog });
   const viewer = createViewer(document.getElementById('viewer'), store);
   bindInteriorToggle(store);
+  bindUndo(store);
+  bindOpenToggle(store);
   bindSkipLink();
   const exporter = createExportDialog({
     getDesign: () => store.getState().design,
@@ -117,6 +139,7 @@ async function boot() {
     onSave: createSaver(store, language, session),
     link: session ? window.location.href : '',
   });
+  bindCarpenterPdf({ button: document.getElementById('export-pdf'), store, viewer });
 
   // The agent is optional: without an OpenAI key on the server the panel says so honestly.
   const agent = health?.data.agent === true
@@ -157,6 +180,16 @@ async function boot() {
   if (import.meta.env.DEV) {
     window.__banai = Object.freeze({ store, viewer, chat: chatModel });
   }
+
+  // Home asks first, then reloads without the saved-design link: a reload shows the start screen
+  // with a fresh default design, which is exactly what the warning promises.
+  const homeDialog = createHomeDialog({
+    onConfirm: () => {
+      window.history.replaceState(null, '', window.location.pathname + window.location.search);
+      window.location.reload();
+    },
+  });
+  document.getElementById('go-home').addEventListener('click', homeDialog.open);
 
   if (session) return; // reopened from a link: straight into the editor
   mountStartScreen({

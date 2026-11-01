@@ -10,7 +10,7 @@ describe('api client', () => {
   it('returns the health payload', async () => {
     const fetchImpl = okResponse({ success: true, data: { status: 'ok' } });
     await expect(getHealth(fetchImpl)).resolves.toEqual({ success: true, data: { status: 'ok' } });
-    expect(fetchImpl).toHaveBeenCalledWith('http://localhost:8000/api/health');
+    expect(fetchImpl).toHaveBeenCalledWith('http://localhost:8001/api/health');
   });
 
   it('unwraps the envelope for catalog and default design', async () => {
@@ -31,7 +31,7 @@ describe('agent api', () => {
     const payload = { messages: [{ role: 'user', text: 'hello' }], design: {}, revision: 1 };
     await expect(sendChat(payload, fetchImpl)).resolves.toEqual({ reply: 'hi', proposal: null });
     const [url, init] = fetchImpl.mock.calls[0];
-    expect(url).toBe('http://localhost:8000/api/chat');
+    expect(url).toBe('http://localhost:8001/api/chat');
     expect(init.method).toBe('POST');
     expect(JSON.parse(init.body)).toEqual(payload);
   });
@@ -62,7 +62,7 @@ describe('exportPdf', () => {
     expect(result.filename).toBe('banai-wardrobe-2400x2400x600mm.pdf');
     expect(await result.blob.text()).toBe('%PDF-1.7');
     const [url, init] = fetchImpl.mock.calls[0];
-    expect(url).toBe('http://localhost:8000/api/export/pdf');
+    expect(url).toBe('http://localhost:8001/api/export/pdf');
     expect(JSON.parse(init.body)).toEqual({ design: { a: 1 }, language: 'en' });
   });
 
@@ -103,7 +103,7 @@ describe('saved designs api', () => {
     await expect(createSavedDesign({ design: {}, language: 'he' }, fetchImpl))
       .resolves.toEqual({ designId, accessToken: 't', revision: 1 });
     const [url, init] = fetchImpl.mock.calls[0];
-    expect(url).toBe('http://localhost:8000/api/designs');
+    expect(url).toBe('http://localhost:8001/api/designs');
     expect(init.method).toBe('POST');
     expect(JSON.parse(init.body)).toEqual({ design: {}, language: 'he' });
   });
@@ -112,7 +112,7 @@ describe('saved designs api', () => {
     const fetchImpl = okResponse({ success: true, data: { designId, design: {}, revision: 3 } });
     await getSavedDesign({ designId, token: 'secret', language: 'en' }, fetchImpl);
     const [url, init] = fetchImpl.mock.calls[0];
-    expect(url).toBe(`http://localhost:8000/api/designs/${designId}?language=en`);
+    expect(url).toBe(`http://localhost:8001/api/designs/${designId}?language=en`);
     expect(url).not.toContain('secret');
     expect(init.headers).toEqual({ Authorization: 'Bearer secret' });
   });
@@ -124,7 +124,7 @@ describe('saved designs api', () => {
     const payload = { designId, token: 'secret', revision: 2, design: { a: 1 }, language: 'he' };
     await expect(updateSavedDesign(payload, stale)).rejects.toMatchObject({ status: 409, code: 'STALE' });
     const [url, init] = stale.mock.calls[0];
-    expect(url).toBe(`http://localhost:8000/api/designs/${designId}`);
+    expect(url).toBe(`http://localhost:8001/api/designs/${designId}`);
     expect(init.method).toBe('PUT');
     expect(init.headers).toMatchObject({ Authorization: 'Bearer secret', 'If-Match': '2' });
     expect(JSON.parse(init.body)).toEqual({ design: { a: 1 }, language: 'he' });
